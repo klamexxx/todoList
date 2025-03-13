@@ -45,6 +45,10 @@
 <script setup>
 import { ref } from 'vue'
 
+defineOptions({
+  name: 'TodoList'
+})
+
 const newTodo = ref('')
 const todoList = ref([])
 const completedList = ref([])
