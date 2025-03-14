@@ -15,10 +15,25 @@
             <div class="todo-items">
                 <div v-for="(item, index) in todoList" :key="index" class="todo-item">
                     <div class="todo-item-content">
-                        <span class="todo-text">{{ item.text }}</span>
-                        <span class="todo-time">创建时间：{{ formatTime(item.createTime) }}</span>
+                        <div v-if="editingIndex === index" class="edit-mode">
+                            <input 
+                                type="text" 
+                                v-model="editingText" 
+                                @keyup.enter="saveEdit(index)" 
+                                @blur="saveEdit(index)"
+                                ref="editInput"
+                            />
+                        </div>
+                        <div v-else class="view-mode">
+                            <span class="todo-text">{{ item.text }}</span>
+                            <span class="todo-time">创建时间：{{ formatTime(item.createTime) }}</span>
+                        </div>
                     </div>
-                    <span class="todo-check" @click="completeTodo(index)">✓</span>
+                    <div class="todo-actions">
+                        <button class="action-btn edit" @click="startEdit(index, item.text)">✎</button>
+                        <button class="action-btn delete" @click="deleteTodo(index)">×</button>
+                        <button class="action-btn complete" @click="completeTodo(index)">✓</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -36,6 +51,9 @@
                             <span class="todo-time">完成时间：{{ formatTime(item.completeTime) }}</span>
                         </div>
                     </div>
+                    <div class="todo-actions">
+                        <button class="action-btn delete" @click="deleteCompletedTodo(index)">×</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -43,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 
 defineOptions({
   name: 'TodoList'
@@ -52,6 +70,9 @@ defineOptions({
 const newTodo = ref('')
 const todoList = ref([])
 const completedList = ref([])
+const editingIndex = ref(-1)
+const editingText = ref('')
+const editInput = ref(null)
 
 const formatTime = (date) => {
     const pad = (num) => String(num).padStart(2, '0')
@@ -72,6 +93,28 @@ const completeTodo = (index) => {
     const completedTodo = todoList.value.splice(index, 1)[0]
     completedTodo.completeTime = new Date()
     completedList.value.push(completedTodo)
+}
+
+const deleteTodo = (index) => {
+    todoList.value.splice(index, 1)
+}
+
+const deleteCompletedTodo = (index) => {
+    completedList.value.splice(index, 1)
+}
+
+const startEdit = async (index, text) => {
+    editingIndex.value = index
+    editingText.value = text
+    await nextTick()
+    editInput.value?.focus()
+}
+
+const saveEdit = (index) => {
+    if (editingText.value.trim()) {
+        todoList.value[index].text = editingText.value.trim()
+    }
+    editingIndex.value = -1
 }
 </script>
 
@@ -268,34 +311,89 @@ const completeTodo = (index) => {
     border-top: 1px dashed #eee;
 }
 
-.todo-check {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #2196F3;
-    color: white;
+.todo-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.action-btn {
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s;
-    flex-shrink: 0;
-    box-shadow: 0 2px 5px rgba(33, 150, 243, 0.3);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 18px;
+    color: white;
+    padding: 0;
+    background: #e0e0e0;
 }
 
-.todo-check:hover {
-    background: #1976D2;
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 3px 8px rgba(25, 118, 210, 0.4);
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.action-btn.edit {
+    background-color: #2196F3;
+}
+
+.action-btn.edit:hover {
+    background-color: #1976D2;
+}
+
+.action-btn.delete {
+    background-color: #f44336;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.action-btn.delete:hover {
+    background-color: #d32f2f;
+}
+
+.action-btn.complete {
+    background-color: #4CAF50;
+}
+
+.action-btn.complete:hover {
+    background-color: #388E3C;
+}
+
+.edit-mode input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #2196F3;
+    border-radius: 4px;
+    font-size: 16px;
+    outline: none;
+}
+
+.view-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.todo-text:hover {
+    color: #2196F3;
 }
 
 .completed .todo-text {
-    color: #94a3b8;
     text-decoration: line-through;
+    color: #999;
 }
 
-.completed.todo-item {
-    background: #f8fafc;
+.todo-edit,
+.todo-delete,
+.todo-check,
+.todo-edit:hover,
+.todo-delete:hover,
+.todo-check:hover {
+    display: none;
 }
 </style>
